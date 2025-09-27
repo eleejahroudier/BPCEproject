@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import './App.css';
 
+
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Dashboard from './routes/Dashboard';
 import ThemeSelector from './components/ThemeSelector';
 import UrlForm from './components/UrlForm';
@@ -24,7 +26,7 @@ const initialThemes = [
   { id: '13', theme: 'Consultation', checked: true },
 ];
 
-function App() {
+function MainApp() {
   const [url, setUrl] = useState('');
   const [submittedUrl, setSubmittedUrl] = useState('');
   const [apiResponse, setApiResponse] = useState(null);
@@ -39,6 +41,7 @@ function App() {
     );
   };
 
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmittedUrl(url);
@@ -54,8 +57,10 @@ function App() {
       if (!response.ok) throw new Error('API error: ' + response.status);
       const data = await response.json();
       setApiResponse(data);
+      navigate('/dashboard', { state: { data } });
     } catch (err) {
       setError(err.message);
+      navigate('/dashboard', { state: { error: err.message } });
     }
   };
 
@@ -74,10 +79,36 @@ function App() {
             <p>{error}</p>
           </div>
         )}
-        {apiResponse && <Dashboard data={apiResponse} />}
+        {/* Dashboard is now a separate page */}
       </div>
     </div>
   );
+}
+
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/dashboard" element={<DashboardWrapper />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function DashboardWrapper() {
+  const location = window.location;
+  // For react-router-dom v6, use useLocation
+  let state = {};
+  try {
+    // Try to use useLocation if available
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    state = require('react-router-dom').useLocation().state || {};
+  } catch (e) {
+    // fallback for SSR or direct access
+  }
+  return <Dashboard data={state.data || (state.error ? { error: state.error } : null)} />;
 }
 
 export default App;
