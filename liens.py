@@ -7,6 +7,12 @@ import os
 import base64
 from openai import AzureOpenAI
 
+# For JS rendering
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
+
 app = Flask(__name__)
 CORS(app)
 
@@ -127,24 +133,42 @@ def check_rgaa_links(url, soup):
 
     return results
 
+
+def get_html_with_selenium(url):
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    try:
+        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        driver.get(url)
+        html = driver.page_source
+        driver.quit()
+        return html
+    except WebDriverException as e:
+        return None
+
+
 @app.route("/check-links-ai", methods=["GET"])
 def check_links_ai():
     url = request.args.get("url")
     if not url:
         return jsonify({"error": "Missing 'url' query parameter"}), 400
 
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
+    # If page looks empty, try Selenium
+    if not soup.find() or len(response.text) < 1000:
+        # Fallback to Selenium for JS-rendered pages
+        html = get_html_with_selenium(url)
+        if not html:
+            return jsonify({"error": "Failed to load page with Selenium"}), 500
+        soup = BeautifulSoup(html, "html.parser")
 
-        links_report = check_rgaa_links(url, soup)
-
-        # Always return JSON with explicit content type
-        return jsonify({"url": url, "links_report": links_report}), 200
-
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+    links_report = check_rgaa_links(url, soup)
+    return jsonify({"url": url, "links_report": links_report}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
