@@ -141,12 +141,17 @@ def get_html_with_selenium(url):
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     try:
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        # Nouvelle syntaxe pour initialiser Chrome WebDriver
+        driver = webdriver.Chrome(
+            service=webdriver.chrome.service.Service(ChromeDriverManager().install()),
+            options=options
+        )
         driver.get(url)
         html = driver.page_source
         driver.quit()
         return html
     except WebDriverException as e:
+        print(f"Selenium error: {str(e)}")
         return None
 
 
@@ -156,19 +161,55 @@ def check_links_ai():
     if not url:
         return jsonify({"error": "Missing 'url' query parameter"}), 400
 
-    response = requests.get(url, timeout=10)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, "html.parser")
-    # If page looks empty, try Selenium
-    if not soup.find() or len(response.text) < 1000:
-        # Fallback to Selenium for JS-rendered pages
-        html = get_html_with_selenium(url)
-        if not html:
-            return jsonify({"error": "Failed to load page with Selenium"}), 500
-        soup = BeautifulSoup(html, "html.parser")
+    try:
+        print(f"[DEBUG] Starting check for URL: {url}")
+        
+        # Test if URL is reachable
+        try:
+            test_response = requests.head(url, timeout=5)
+            print(f"[DEBUG] URL status code: {test_response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"[DEBUG] URL not reachable: {str(e)}")
+            return jsonify({"error": f"URL not reachable: {str(e)}"}), 400
 
-    links_report = check_rgaa_links(url, soup)
-    return jsonify({"url": url, "links_report": links_report}), 200
+        # Try with Selenium
+        print("[DEBUG] Attempting to fetch with Selenium...")
+        html = get_html_with_selenium(url)
+        
+        if not html:
+            print("[DEBUG] Selenium returned no content")
+            return jsonify({"error": "No content retrieved from page"}), 500
+            
+        print(f"[DEBUG] Retrieved content length: {len(html)}")
+        
+        # Parse with BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        
+        # Debug information about parsed content
+        links = soup.find_all('a', href=True)
+        print(f"[DEBUG] Found {len(links)} links in page")
+        for link in links[:5]:  # Print first 5 links only
+            print(f"[DEBUG] Link found: {link.get_text(strip=True)[:50]} -> {link['href']}")
+
+        # Check links
+        print("[DEBUG] Starting RGAA check...")
+        links_report = check_rgaa_links(url, soup)
+        print(f"[DEBUG] RGAA check complete. Found {len(links_report)} issues/items")
+
+        return jsonify({
+            "url": url,
+            "links_report": links_report,
+            "stats": {
+                "total_links": len(links),
+                "issues_found": len(links_report)
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Unexpected error: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
