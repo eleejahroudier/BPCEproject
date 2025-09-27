@@ -18,7 +18,7 @@ function Dashboard({ data }) {
           marginBottom: 32,
           letterSpacing: 1
         }}>
-          Dashboard d’Analyse
+          Analysis Dashboard
         </h2>
         <div style={{
           display: 'flex',
@@ -53,14 +53,14 @@ function Dashboard({ data }) {
           color: '#fff',
           fontSize: 16
         }}>
-          <h3 style={{ marginTop: 0, color: '#ffe082', fontWeight: 500 }}>Détails JSON (placeholder)</h3>
+          <h3 style={{ marginTop: 0, color: '#ffe082', fontWeight: 500 }}>JSON Details (placeholder)</h3>
           <pre style={{
             background: 'rgba(0,0,0,0.08)',
             borderRadius: 6,
             padding: 16,
             color: '#ffe'
           }}>
-            {data ? JSON.stringify(data, null, 2) : 'Aucune donnée reçue.'}
+            {data ? JSON.stringify(data, null, 2) : 'No data received.'}
           </pre>
         </div>
       </div>
