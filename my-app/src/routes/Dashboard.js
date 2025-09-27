@@ -1,6 +1,18 @@
 import React from 'react';
 
 function Dashboard({ data }) {
+  if (data && data.error) {
+    return (
+      <div className="gradient-bg" style={{ minHeight: '100vh', padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: 120, color: '#ff1744', marginBottom: 24 }}>✖️</div>
+        <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 32, marginBottom: 16 }}>Erreur</h2>
+        <div style={{ color: '#fff', fontSize: 20 }}>{data.error}</div>
+      </div>
+    );
+  }
+
+  const categories = data && typeof data === 'object' ? Object.entries(data) : [];
+
   return (
     <div className="gradient-bg" style={{ minHeight: '100vh', padding: '40px 0' }}>
       <div style={{
@@ -20,49 +32,33 @@ function Dashboard({ data }) {
         }}>
           Analysis Dashboard
         </h2>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 32,
-          justifyContent: 'center',
-          marginBottom: 32
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #6a1b9a 60%, #5f0a87 100%)',
-            borderRadius: 12,
-            minWidth: 160,
-            minHeight: 120,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: 20,
-            position: 'relative'
-          }}>
-            <span style={{ fontSize: 48, fontWeight: 700, marginBottom: 8 }}>--</span>
-            <span style={{ fontSize: 18, opacity: 0.85 }}>Accessibility</span>
+        {categories.length > 0 ? (
+          <div style={{ marginBottom: 32 }}>
+            {categories.map(([cat, value]) => (
+              <div key={cat} style={{
+                background: 'rgba(0,0,0,0.10)',
+                borderRadius: 8,
+                padding: 16,
+                color: '#fff',
+                marginBottom: 16
+              }}>
+                <h3 style={{ margin: 0, color: '#ffe082', fontWeight: 500 }}>{cat}</h3>
+                <pre style={{
+                  background: 'rgba(0,0,0,0.08)',
+                  borderRadius: 6,
+                  padding: 12,
+                  color: '#ffe',
+                  fontSize: 15,
+                  margin: 0
+                }}>
+                  {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                </pre>
+              </div>
+            ))}
           </div>
-        </div>
-        <div style={{
-          background: 'rgba(0,0,0,0.10)',
-          borderRadius: 8,
-          padding: 24,
-          color: '#fff',
-          fontSize: 16
-        }}>
-          <h3 style={{ marginTop: 0, color: '#ffe082', fontWeight: 500 }}>JSON Details (placeholder)</h3>
-          <pre style={{
-            background: 'rgba(0,0,0,0.08)',
-            borderRadius: 6,
-            padding: 16,
-            color: '#ffe'
-          }}>
-            {data ? JSON.stringify(data, null, 2) : 'No data received.'}
-          </pre>
-        </div>
+        ) : (
+          <div style={{ color: '#fff', fontSize: 18 }}>No data received.</div>
+        )}
       </div>
     </div>
   );

@@ -49,10 +49,9 @@ function MainApp() {
     setError(null);
     const selectedThemes = themes.filter(t => t.checked).map(t => t.theme);
     try {
-      const response = await fetch('/api/your-endpoint', {
-        method: 'POST',
+      const response = await fetch(`http://127.0.0.1:5000/check-links-ai?url=${encodeURIComponent(url)}`, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, themes: selectedThemes }),
       });
       if (!response.ok) throw new Error('API error: ' + response.status);
       const data = await response.json();
