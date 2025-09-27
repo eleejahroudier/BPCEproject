@@ -213,3 +213,7 @@ def check_links_ai():
 
 if __name__ == "__main__":
     app.run(debug=True)
+<<<<<<< HEAD
+=======
+
+>>>>>>> herasinho
